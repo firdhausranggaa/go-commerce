@@ -4,9 +4,10 @@ import (
 	"gocommerce/configs"
 	"gocommerce/handlers"
 	"gocommerce/middlewares"
-	"gocommerce/migrations"
-	"gocommerce/seeders" // Pastikan import ini ditambahkan
+	"gocommerce/migrations" // Pastikan import ini ditambahkan
 	_ "net/http/pprof"
+
+	"github.com/gin-contrib/cors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,9 +20,17 @@ func main() {
 	defer db.Close()
 
 	migrations.Migrate(db)
-	seeders.Seed(db) // Data otomatis masuk ke MySQL saat server menyala
+	// seeders.Seed(db) // Data otomatis masuk ke MySQL saat server menyala
 
 	router := gin.Default()
+
+	// Tambahkan Middleware CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // Port default Vite
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Rute Publik
 	router.POST("/login", handlers.Login(db))
