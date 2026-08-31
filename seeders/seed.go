@@ -4,6 +4,7 @@ import (
 	"gocommerce/models"
 
 	"github.com/jinzhu/gorm"
+	"golang.org/x/crypto/bcrypt" // Tambahkan import bcrypt
 )
 
 func Seed(db *gorm.DB) {
@@ -14,14 +15,18 @@ func Seed(db *gorm.DB) {
 	db.Create(&category1)
 	db.Create(&category2)
 
-	// Seeder untuk Users
-	user1 := models.User{Username: "user1", Email: "user1@example.com", Password: "password1"}
-	user2 := models.User{Username: "user2", Email: "user2@example.com", Password: "password2"}
+	// Proses hashing untuk seeder
+	hashedPassword1, _ := bcrypt.GenerateFromPassword([]byte("password1"), bcrypt.DefaultCost)
+	hashedPassword2, _ := bcrypt.GenerateFromPassword([]byte("password2"), bcrypt.DefaultCost)
+
+	// Seeder untuk Users menggunakan password yang sudah di-hash
+	user1 := models.User{Username: "user1", Email: "user1@example.com", Password: string(hashedPassword1)}
+	user2 := models.User{Username: "user2", Email: "user2@example.com", Password: string(hashedPassword2)}
 
 	db.Create(&user1)
 	db.Create(&user2)
 
-	// Seeder untuk Products
+	/// Seeder untuk Products
 	product1 := models.Product{Name: "Product 1", CategoryID: 1}
 	product2 := models.Product{Name: "Product 2", CategoryID: 2}
 
