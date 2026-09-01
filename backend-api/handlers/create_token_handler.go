@@ -2,7 +2,7 @@ package handlers
 
 import "github.com/dgrijalva/jwt-go"
 
-var jwtKey = []byte("your-secret-key") // Ganti dengan kunci rahasia Anda
+var jwtKey = []byte("your-secret-key")
 
 func CreateToken(userID uint) (string, error) {
 	claims := jwt.MapClaims{}

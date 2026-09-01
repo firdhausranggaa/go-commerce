@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var jwtKey = []byte("your-secret-key") // Ganti dengan kunci rahasia Anda
+var jwtKey = []byte("your-secret-key") // mengganti dengan kunci rahasia Anda
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -6,10 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt" // Tambahkan import ini
+	"golang.org/x/crypto/bcrypt"
 )
 
-// Pastikan struktur inputan disesuaikan dengan milikmu
 func Register(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input models.User
@@ -18,16 +17,14 @@ func Register(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// --- PROSES ENKRIPSI BCRYPT MULAI DI SINI ---
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi kata sandi"})
 			return
 		}
 
-		// Ganti password asli dengan password yang sudah di-hash
+		// mengganti password asli dengan password yang sudah di-hash
 		input.Password = string(hashedPassword)
-		// --------------------------------------------
 
 		if err := db.Create(&input).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat akun"})

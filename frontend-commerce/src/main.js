@@ -4,7 +4,7 @@ import App from './App.vue'
 import LoginView from './views/LoginView.vue'
 import ProductsView from './views/ProductsView.vue'
 
-// Definisikan rute halaman
+// mendefinisikan rute halaman
 const routes = [
     { path: '/', component: LoginView },
     { path: '/products', component: ProductsView }
@@ -16,5 +16,5 @@ const router = createRouter({
     routes
 })
 
-// Pasang router ke dalam aplikasi Vue
+// memasang router ke dalam aplikasi Vue
 createApp(App).use(router).mount('#app')

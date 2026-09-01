@@ -1,8 +1,18 @@
 <template>
     <div style="padding: 20px; font-family: sans-serif;">
+        <!-- Bagian Header & Tombol -->
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Katalog Produk Go-Commerce</h2>
-            <button @click="handleLogout" style="padding: 5px 10px; cursor: pointer; color: red;">Logout</button>
+            <div>
+                <button @click="openCart"
+                    style="padding: 5px 15px; cursor: pointer; margin-right: 10px; background: #333; color: white; border: none; border-radius: 4px;">
+                    Lihat Keranjang
+                </button>
+                <button @click="handleLogout"
+                    style="padding: 5px 10px; cursor: pointer; color: red; background: none; border: 1px solid red; border-radius: 4px;">
+                    Logout
+                </button>
+            </div>
         </div>
 
         <p v-if="loading">Memuat produk...</p>
@@ -12,26 +22,64 @@
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
             <div v-for="product in products" :key="product.id"
                 style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
-                <!-- Ubah Name menjadi name -->
                 <h3 style="margin-top: 0;">{{ product.name }}</h3>
-
-                <!-- Ubah CategoryID menjadi category_id -->
                 <p style="color: gray; font-size: 14px;">Kategori ID: {{ product.category_id }}</p>
-
-                <!-- (Opsional) Tambahkan harga karena muncul di log -->
                 <p style="color: #42b883; font-weight: bold; margin-bottom: 15px;">Harga: Rp {{ product.price }}</p>
-
-                <button
+                <button @click="addToCart(product.id)"
                     style="width: 100%; padding: 8px; cursor: pointer; background: #42b883; color: white; border: none; border-radius: 4px;">
                     Tambah ke Keranjang
                 </button>
+            </div>
+        </div>
+
+        <!-- DRAWER KERANJANG (Muncul jika isCartOpen = true) -->
+        <div v-if="isCartOpen"
+            style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; justify-content: flex-end; z-index: 1000;">
+            <!-- Panel Putih Sebelah Kanan -->
+            <div
+                style="width: 350px; background: white; height: 100%; padding: 20px; box-shadow: -2px 0 10px rgba(0,0,0,0.2); overflow-y: auto;">
+
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px;">
+                    <h3 style="margin: 0;">Keranjang Belanja</h3>
+                    <button @click="isCartOpen = false"
+                        style="background: none; border: none; font-size: 24px; cursor: pointer; color: #888;">&times;</button>
+                </div>
+
+                <p v-if="cartLoading">Mengambil data keranjang...</p>
+                <div v-else-if="cartItems.length === 0" style="color: gray; text-align: center; margin-top: 50px;">
+                    Keranjang kamu masih kosong.
+                </div>
+
+                <!-- Daftar Item di Keranjang -->
+                <div v-else>
+                    <div v-for="item in cartItems" :key="item.id"
+                        style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                        <!-- Mengambil nama produk dari relasi GORM (item.product.name) -->
+                        <h4 style="margin: 0 0 5px 0;">{{ item.product.name }}</h4>
+                        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                            <span>Jumlah: {{ item.quantity }}</span>
+                            <span style="font-weight: bold; color: #42b883;">Rp {{ item.product.price * item.quantity
+                                }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Kalkulasi Total -->
+                    <div style="margin-top: 20px; text-align: right; font-weight: bold; font-size: 18px;">
+                        Total: Rp {{ cartTotal }}
+                    </div>
+                    <button @click="processCheckout"
+                        style="width: 100%; padding: 12px; margin-top: 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 4px; font-weight: bold;">
+                        Checkout Sekarang
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api';
 
@@ -40,32 +88,88 @@ const loading = ref(true);
 const errorMsg = ref('');
 const router = useRouter();
 
+// --- STATE KERANJANG ---
+const isCartOpen = ref(false);
+const cartItems = ref([]);
+const cartLoading = ref(false);
+
+// --- FUNGSI PRODUK ---
 const fetchProducts = async () => {
     try {
         const response = await api.get('/products');
-        // Menangkap array data produk
         products.value = response.data.data || response.data;
-        // TAMBAHKAN BARIS INI UNTUK MENGINTIP DATA ASLI:
-        console.log("Struktur JSON dari Golang:", products.value);
     } catch (error) {
         console.error("Gagal mengambil data:", error);
         errorMsg.value = "Gagal memuat produk. Sesi mungkin telah berakhir.";
-
-        // Auto-logout jika token ditolak (401 Unauthorized)
-        if (error.response && error.response.status === 401) {
-            handleLogout();
-        }
+        if (error.response && error.response.status === 401) handleLogout();
     } finally {
         loading.value = false;
     }
 };
 
+const addToCart = async (productId) => {
+    try {
+        const response = await api.post('/cart', { product_id: productId });
+        alert(response.data.message);
+    } catch (error) {
+        console.error("Gagal menambah keranjang:", error);
+        alert('Gagal menambahkan ke keranjang.');
+    }
+};
+
+// --- FUNGSI KERANJANG ---
+const fetchCart = async () => {
+    cartLoading.value = true;
+    try {
+        const response = await api.get('/cart');
+        // Memasukkan array data dari tabel MySQL ke state Vue
+        cartItems.value = response.data.data || [];
+    } catch (error) {
+        console.error("Gagal mengambil keranjang:", error);
+    } finally {
+        cartLoading.value = false;
+    }
+};
+
+const openCart = () => {
+    isCartOpen.value = true;
+    fetchCart();
+};
+
+// Auto-kalkulasi harga
+const cartTotal = computed(() => {
+    return cartItems.value.reduce((total, item) => {
+        if (item.product) {
+            return total + (item.product.price * item.quantity);
+        }
+        return total;
+    }, 0);
+});
+
+// --- FUNGSI CHECKOUT ---
+const processCheckout = async () => {
+    if (cartItems.value.length === 0) {
+        alert("Pilih barang dulu sebelum checkout!");
+        return;
+    }
+
+    try {
+        const response = await api.post('/checkout');
+        alert(response.data.message); // Menampilkan pesan sukses dari Golang
+        fetchCart(); // Memanggil ulang data
+        isCartOpen.value = false; // Menutup laci secara otomatis
+    } catch (error) {
+        console.error("Gagal checkout:", error);
+        alert(error.response?.data?.error || "Gagal memproses pembayaran");
+    }
+};
+
+// --- FUNGSI OTENTIKASI ---
 const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/');
 };
 
-// Panggil fungsi segera setelah halaman dirender
 onMounted(() => {
     fetchProducts();
 });

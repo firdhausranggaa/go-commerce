@@ -4,7 +4,7 @@ import (
 	"gocommerce/configs"
 	"gocommerce/handlers"
 	"gocommerce/middlewares"
-	"gocommerce/migrations" // Pastikan import ini ditambahkan
+	"gocommerce/migrations"
 	_ "net/http/pprof"
 
 	"github.com/gin-contrib/cors"
@@ -24,9 +24,9 @@ func main() {
 
 	router := gin.Default()
 
-	// Tambahkan Middleware CORS
+	// menambahkan Middleware CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"}, // Port default Vite
+		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -39,7 +39,10 @@ func main() {
 	// Rute Terlindungi (Protected)
 	router.GET("/products", middlewares.AuthMiddleware(), handlers.ListProducts(db))
 	router.POST("/transactions", handlers.CreateTransaction(db))
-	// ... (Tambahkan rute CRUD lainnya yang kamu butuhkan di sini)
+	// menambahkan rute keranjang
+	router.POST("/cart", middlewares.AuthMiddleware(), handlers.AddToCart(db))
+	router.GET("/cart", middlewares.AuthMiddleware(), handlers.GetCart(db))
+	router.POST("/checkout", middlewares.AuthMiddleware(), handlers.Checkout(db))
 
 	router.Run(":5000")
 }

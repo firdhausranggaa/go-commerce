@@ -18,12 +18,6 @@ import (
 // }
 
 // contoh baru dengan goroutine
-
-// @Summary Get a list of products
-// @Description Retrieve a list of products from the database.
-// @Produce json
-// @Success 200 {array} Product
-// @Router /products [get]
 func ListProducts(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var products []models.Product

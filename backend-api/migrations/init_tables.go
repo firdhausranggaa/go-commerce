@@ -14,4 +14,12 @@ func Migrate(db *gorm.DB) {
 		&models.TransactionItem{},
 		&models.User{},
 	)
+
+	db.AutoMigrate(
+		&models.User{},
+		&models.Product{},
+		&models.Transaction{},
+		&models.TransactionItem{},
+		&models.Cart{},
+	)
 }

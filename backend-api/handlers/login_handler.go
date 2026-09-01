@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"golang.org/x/crypto/bcrypt" // Tambahkan import bcrypt
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Login(db *gorm.DB) gin.HandlerFunc {
@@ -29,7 +29,6 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// ... (Sisa kode CreateToken tetap sama)
 		token, err := CreateToken(user.ID)
 		if err != nil {
 			c.JSON(500, gin.H{"message": "Internal Server Error"})
