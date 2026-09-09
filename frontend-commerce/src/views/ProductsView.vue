@@ -1,9 +1,19 @@
 <template>
     <div style="padding: 20px; font-family: sans-serif;">
-        <!-- Bagian Header & Tombol -->
+
+        <div v-if="toastMsg"
+            style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 30px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease;">
+            {{ toastMsg }}
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h2>Katalog Produk Go-Commerce</h2>
             <div>
+                <button @click="router.push('/history')"
+                    style="padding: 5px 15px; cursor: pointer; margin-right: 10px; background: white; color: #333; border: 1px solid #333; border-radius: 4px;">
+                    Riwayat Pesanan
+                </button>
+
                 <button @click="openCart"
                     style="padding: 5px 15px; cursor: pointer; margin-right: 10px; background: #333; color: white; border: none; border-radius: 4px;">
                     Lihat Keranjang
@@ -18,7 +28,6 @@
         <p v-if="loading">Memuat produk...</p>
         <p v-if="errorMsg" style="color: red;">{{ errorMsg }}</p>
 
-        <!-- Grid Produk -->
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
             <div v-for="product in products" :key="product.id"
                 style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; width: 200px; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
@@ -32,10 +41,8 @@
             </div>
         </div>
 
-        <!-- DRAWER KERANJANG (Muncul jika isCartOpen = true) -->
         <div v-if="isCartOpen"
             style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; justify-content: flex-end; z-index: 1000;">
-            <!-- Panel Putih Sebelah Kanan -->
             <div
                 style="width: 350px; background: white; height: 100%; padding: 20px; box-shadow: -2px 0 10px rgba(0,0,0,0.2); overflow-y: auto;">
 
@@ -51,20 +58,17 @@
                     Keranjang kamu masih kosong.
                 </div>
 
-                <!-- Daftar Item di Keranjang -->
                 <div v-else>
                     <div v-for="item in cartItems" :key="item.id"
                         style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
-                        <!-- Mengambil nama produk dari relasi GORM (item.product.name) -->
                         <h4 style="margin: 0 0 5px 0;">{{ item.product.name }}</h4>
                         <div style="display: flex; justify-content: space-between; font-size: 14px;">
                             <span>Jumlah: {{ item.quantity }}</span>
                             <span style="font-weight: bold; color: #42b883;">Rp {{ item.product.price * item.quantity
-                                }}</span>
+                            }}</span>
                         </div>
                     </div>
 
-                    <!-- Kalkulasi Total -->
                     <div style="margin-top: 20px; text-align: right; font-weight: bold; font-size: 18px;">
                         Total: Rp {{ cartTotal }}
                     </div>
@@ -88,12 +92,16 @@ const loading = ref(true);
 const errorMsg = ref('');
 const router = useRouter();
 
-// --- STATE KERANJANG ---
 const isCartOpen = ref(false);
 const cartItems = ref([]);
 const cartLoading = ref(false);
 
-// --- FUNGSI PRODUK ---
+const toastMsg = ref('');
+const showToast = (msg) => {
+    toastMsg.value = msg;
+    setTimeout(() => { toastMsg.value = ''; }, 3000);
+};
+
 const fetchProducts = async () => {
     try {
         const response = await api.get('/products');
@@ -110,19 +118,17 @@ const fetchProducts = async () => {
 const addToCart = async (productId) => {
     try {
         const response = await api.post('/cart', { product_id: productId });
-        alert(response.data.message);
+        showToast(response.data.message);
+        fetchCart();
     } catch (error) {
-        console.error("Gagal menambah keranjang:", error);
-        alert('Gagal menambahkan ke keranjang.');
+        showToast('Gagal menambahkan ke keranjang.');
     }
 };
 
-// --- FUNGSI KERANJANG ---
 const fetchCart = async () => {
     cartLoading.value = true;
     try {
         const response = await api.get('/cart');
-        // Memasukkan array data dari tabel MySQL ke state Vue
         cartItems.value = response.data.data || [];
     } catch (error) {
         console.error("Gagal mengambil keranjang:", error);
@@ -136,7 +142,6 @@ const openCart = () => {
     fetchCart();
 };
 
-// Auto-kalkulasi harga
 const cartTotal = computed(() => {
     return cartItems.value.reduce((total, item) => {
         if (item.product) {
@@ -146,25 +151,21 @@ const cartTotal = computed(() => {
     }, 0);
 });
 
-// --- FUNGSI CHECKOUT ---
 const processCheckout = async () => {
     if (cartItems.value.length === 0) {
-        alert("Pilih barang dulu sebelum checkout!");
+        showToast("Pilih barang dulu sebelum checkout!");
         return;
     }
-
     try {
         const response = await api.post('/checkout');
-        alert(response.data.message); // Menampilkan pesan sukses dari Golang
-        fetchCart(); // Memanggil ulang data
-        isCartOpen.value = false; // Menutup laci secara otomatis
+        showToast(response.data.message);
+        fetchCart();
+        isCartOpen.value = false;
     } catch (error) {
-        console.error("Gagal checkout:", error);
-        alert(error.response?.data?.error || "Gagal memproses pembayaran");
+        showToast(error.response?.data?.error || "Gagal memproses pembayaran");
     }
 };
 
-// --- FUNGSI OTENTIKASI ---
 const handleLogout = () => {
     localStorage.removeItem('token');
     router.push('/');
