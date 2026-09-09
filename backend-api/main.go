@@ -1,15 +1,16 @@
 package main
 
 import (
-    "gocommerce/configs"
-    "gocommerce/handlers"
-    "gocommerce/middlewares"
-    "gocommerce/migrations"
-    "gocommerce/models"
-    _ "net/http/pprof"
+	"gocommerce/configs"
+	"gocommerce/handlers"
+	"gocommerce/middlewares"
+	"gocommerce/migrations"
+	"gocommerce/models"
+	"gocommerce/seeders"
+	_ "net/http/pprof"
 
-    "github.com/gin-contrib/cors"
-    "github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,8 +21,9 @@ func main() {
 	defer db.Close()
 
 	migrations.Migrate(db)
+	// seeders.Seed(db)
 
-	router := gin.Default()
+	router := gin.Default(
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
@@ -35,15 +37,19 @@ func main() {
 
 	router.GET("/products", middlewares.AuthMiddleware(), handlers.ListProducts(db))
 	router.POST("/transactions", handlers.CreateTransaction(db))
+
 	router.POST("/cart", middlewares.AuthMiddleware(), handlers.AddToCart(db))
 	router.GET("/cart", middlewares.AuthMiddleware(), handlers.GetCart(db))
 	router.POST("/checkout", middlewares.AuthMiddleware(), handlers.Checkout(db))
+	
 	router.GET("/history", middlewares.AuthMiddleware(), func(c *gin.Context) {
-    userID, _ := c.Get("user_id")
-    var history []models.Transaction
-    db.Preload("Items").Preload("Items.Product").Where("user_id = ?", userID).Find(&history)
-    c.JSON(200, gin.H{"data": history})
-})
+		userID, _ := c.Get("user_id")
+		var history []models.Transaction
+
+		db.Preload("Items").Preload("Items.Product").Where("user_id = ?", userID).Find(&history)
+
+		c.JSON(200, gin.H{"data": history})
+	})
 
 	router.Run(":5000")
 }
