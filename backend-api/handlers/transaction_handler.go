@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"gocommerce/models"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
