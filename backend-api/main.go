@@ -23,7 +23,7 @@ func main() {
 	migrations.Migrate(db)
 	// seeders.Seed(db)
 
-	router := gin.Default(
+	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"},
