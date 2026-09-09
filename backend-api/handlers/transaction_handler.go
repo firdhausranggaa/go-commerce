@@ -47,28 +47,58 @@ func Checkout(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Sesi tidak valid"})
+			c.JSON(401, gin.H{"error": "Sesi tidak valid"})
 			return
 		}
 
-		// mengambil seluruh isi keranjang milik user
 		var carts []models.Cart
-		if err := db.Where("user_id = ?", userID).Find(&carts).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membaca keranjang"})
+		if err := db.Preload("Product").Where("user_id = ?", userID).Find(&carts).Error; err != nil {
+			c.JSON(500, gin.H{"error": "Gagal membaca keranjang"})
 			return
 		}
-
 		if len(carts) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Keranjang masih kosong"})
+			c.JSON(400, gin.H{"error": "Keranjang masih kosong"})
 			return
 		}
 
-		// menghapus semua isi keranjang (simulasi checkout berhasil)
-		if err := db.Where("user_id = ?", userID).Delete(&models.Cart{}).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses checkout"})
+		tx := db.Begin()
+		
+		var grandTotal float64
+		for _, cart := range carts {
+			grandTotal += cart.Product.Price * float64(cart.Quantity)
+		}
+
+		transaction := models.Transaction{
+			UserID: userID.(uint),
+			Amount: grandTotal, 
+		}
+		if err := tx.Create(&transaction).Error; err != nil {
+			tx.Rollback()
+			c.JSON(500, gin.H{"error": "Gagal membuat transaksi"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Pembayaran berhasil diproses! Terima kasih."})
+		for _, cart := range carts {
+			txItem := models.TransactionItem{
+				TransactionID: transaction.ID,
+				ProductID:     cart.ProductID,
+				Quantity:      uint(cart.Quantity),
+				Price:         cart.Product.Price,
+			}
+			if err := tx.Create(&txItem).Error; err != nil {
+				tx.Rollback()
+				c.JSON(500, gin.H{"error": "Gagal mencatat rincian barang"})
+				return
+			}
+		}
+
+		if err := tx.Where("user_id = ?", userID).Delete(&models.Cart{}).Error; err != nil {
+			tx.Rollback()
+			c.JSON(500, gin.H{"error": "Gagal membersihkan keranjang"})
+			return
+		}
+
+		tx.Commit()
+		c.JSON(200, gin.H{"message": "Checkout sukses, transaksi tercatat secara permanen!"})
 	}
 }

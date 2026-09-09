@@ -12,25 +12,28 @@ func AddToCart(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Sesi tidak valid"})
+			c.JSON(401, gin.H{"error": "Sesi tidak valid"})
 			return
 		}
 
-		var cart models.Cart
-		if err := c.ShouldBindJSON(&cart); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Format data produk tidak valid"})
+		var input models.Cart
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "Format tidak valid"})
 			return
 		}
 
-		cart.UserID = userID.(uint)
-		cart.Quantity = 1
-
-		if err := db.Create(&cart).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memasukkan ke keranjang"})
+		var existingCart models.Cart
+		if err := db.Where("user_id = ? AND product_id = ?", userID, input.ProductID).First(&existingCart).Error; err == nil {
+			db.Model(&existingCart).Update("quantity", existingCart.Quantity+1)
+			c.JSON(200, gin.H{"message": "Jumlah barang ditambahkan ke keranjang"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "Berhasil ditambahkan ke keranjang"})
+		input.UserID = userID.(uint)
+		input.Quantity = 1
+		db.Create(&input)
+
+		c.JSON(200, gin.H{"message": "Barang baru ditambahkan ke keranjang"})
 	}
 }
 
