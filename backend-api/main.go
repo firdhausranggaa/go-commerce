@@ -6,7 +6,7 @@ import (
 	"gocommerce/middlewares"
 	"gocommerce/migrations"
 	"gocommerce/models"
-	"gocommerce/seeders"
+	// "gocommerce/seeders"
 	_ "net/http/pprof"
 
 	"github.com/gin-contrib/cors"
