@@ -1,63 +1,50 @@
 # Go-Commerce: Fullstack E-Commerce Monorepo
 
-Go-Commerce adalah aplikasi web *e-commerce* fungsional yang dibangun menggunakan arsitektur modern pemisahan *frontend* dan *backend* di dalam satu repositori tunggal (*monorepo*). Proyek ini mendemonstrasikan penguasaan siklus pengembangan perangkat lunak secara utuh (*end-to-end*), mulai dari manajemen antarmuka reaktif, autentikasi sesi, hingga manipulasi database relasional dan API.
+Go-Commerce adalah aplikasi web *e-commerce* tingkat produksi (*production-grade*) yang dibangun menggunakan arsitektur *monorepo*. Proyek ini mendemonstrasikan implementasi siklus pengembangan *fullstack*, mulai dari antarmuka reaktif, autentikasi ganda, hingga pemrosesan transaksi database yang mematuhi standar ACID.
 
-## 🛠️ Teknologi yang Digunakan
+## 🛠️ Tumpukan Teknologi (Tech Stack)
 
 **Frontend:**
-* Vue.js 3 (Composition API & `<script setup>`)
-* Vite (Build Tool)
-* Vue Router (Navigasi Klien)
-* Axios (HTTP Client)
+* Vue.js 3 (Composition API) & Vite
+* Vue Router (Navigation Guards)
+* Axios (HTTP Client & Interceptors)
 
 **Backend:**
-* Golang (Go)
-* Gin Web Framework (RESTful API & Routing)
+* Golang (Go) & Gin Web Framework
 * GORM (Object Relational Mapping)
-* JWT (JSON Web Tokens untuk Autentikasi)
+* JWT (JSON Web Tokens) & Bcrypt (Password Hashing)
 * CORS Middleware
 
 **Database:**
 * MySQL
 
-## ✨ Fitur Utama
+## ✨ Fitur Unggulan
 
-* **Sistem Autentikasi Keamanan:** Registrasi dan Login menggunakan token JWT.
-* **Katalog Produk Dinamis:** Pengambilan data produk secara asinkron dari REST API.
-* **Keranjang Belanja Reaktif:** Antarmuka *Drawer* (laci luncung) modern yang memperbarui *state* dan kalkulasi harga secara *real-time* tanpa memuat ulang halaman.
-* **Manajemen Transaksi (Checkout):** Integrasi relasi database (*Preload/JOIN*) untuk memproses perpindahan data keranjang dan pembersihan sesi transaksi pengguna secara otomatis.
+* **Transaksi ACID & Snapshot Harga:** Logika *checkout* di backend menggunakan *Database Transaction* untuk mencegah kebocoran data, serta merekam harga *snapshot* agar riwayat pesanan kebal dari perubahan harga produk di masa depan.
+* **Sistem Autentikasi & Keamanan:** Fitur Registrasi dan Login yang dilindungi oleh enkripsi sandi Bcrypt dan sesi berbasis JWT. Akses peramban dikunci secara ketat menggunakan *Vue Navigation Guards*.
+* **Keranjang Belanja Reaktif:** Antarmuka laci (*Drawer*) reaktif dengan deteksi duplikasi barang otomatis (*Upsert*) dan sistem umpan balik *Toast Notifications*.
+* **Jejak Riwayat Belanja:** Visualisasi data relasional kompleks (*Nested Preload* GORM) dari tabel entitas transaksi, rincian item, dan katalog produk.
 
 ## 📂 Struktur Direktori
 
-Repositori ini menggunakan arsitektur *monorepo* simetris:
-
 ```text
 go-commerce/
-├── backend-api/         # Logika server, model database, dan routing REST API (Golang)
-├── frontend-commerce/   # Antarmuka pengguna reaktif dan state management (Vue 3)
+├── backend-api/         # Logika server, model database, proteksi route (Golang)
+├── frontend-commerce/   # Antarmuka klien reaktif, state management (Vue 3)
 └── README.md
 
 ```
 
 ## 🚀 Panduan Instalasi dan Menjalankan Proyek
 
-Pastikan Anda telah menginstal **Go**, **Node.js**, dan **MySQL** di sistem Anda.
+Pastikan **Go**, **Node.js**, dan **MySQL** telah terinstal di sistem Anda.
 
-### 1. Kloning Repositori
+### 1. Setup Database (MySQL)
 
-```bash
-git clone [https://github.com/firdhausranggaa/go-commerce.git](https://github.com/firdhausranggaa/go-commerce.git)
-cd go-commerce
+* Buat database kosong bernama `ecomm`.
+* *(Seluruh tabel akan dicetak secara otomatis oleh AutoMigrate GORM)*.
 
-```
-
-### 2. Setup Database (MySQL)
-
-* Buka MySQL (melalui DBeaver, phpMyAdmin, atau CLI).
-* Buat database baru bernama `ecomm`.
-* *(Tabel akan secara otomatis dibuat oleh fitur AutoMigrate GORM saat server Golang dijalankan).*
-
-### 3. Menjalankan Backend (Golang)
+### 2. Menjalankan Backend (Golang)
 
 Buka terminal dan arahkan ke folder backend:
 
@@ -68,9 +55,9 @@ go run main.go
 
 ```
 
-*Server akan berjalan di `http://localhost:5000*`
+*Catatan: Anda dapat mengaktifkan sementara `seeders.Seed(db)` di `main.go` pada saat eksekusi pertama untuk menyuntikkan data katalog produk dummy.*
 
-### 4. Menjalankan Frontend (Vue 3)
+### 3. Menjalankan Frontend (Vue 3)
 
 Buka tab terminal baru dan arahkan ke folder frontend:
 
